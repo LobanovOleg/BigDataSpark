@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: lowban
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lab2
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+
+  
+  spark:
+    image: bitnami/spark:3.5
+    container_name: spark
+    environment:
+      SPARK_JARS_IVY: /home/spark/.ivy2
+      HOME: /home/spark
+    volumes:
+      - ./app:/app
+      - ./data:/app/data
+      - ./jars:/opt/spark/jars
+      - spark_ivy:/opt/spark/ivy
+    working_dir: /app
+    command:
+      - /bin/bash
+      - -c
+      - "while true; do sleep 10; done"
+    ports:
+      - "4040:4040"
+    depends_on:
+      - postgres
+      - clickhouse
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./init/init_clickhouse.sql:/docker-entrypoint-init_db.d/init_clickhouse.sql
+
+volumes:
+  pg_data:
+  clickhouse_data:
+  spark_ivy:
